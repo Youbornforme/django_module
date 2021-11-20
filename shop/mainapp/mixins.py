@@ -1,13 +1,14 @@
 from django.views.generic.detail import SingleObjectMixin
+from django.views.generic import View
 
-from .models import Iphone, Macbook
+from .models import Category, Cart, Customer, Macbook, Iphone
 
 
 class CategoryDetailMixin(SingleObjectMixin):
 
     CATEGORY_SLUG2PRODUCT_MODEL = {
-        'notebooks': Macbook,
-        'smartphones': Iphone
+        'macbooks': Macbook,
+        'ihones': Iphone
     }
 
     def get_context_data(self, **kwargs):
@@ -20,3 +21,19 @@ class CategoryDetailMixin(SingleObjectMixin):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.get_categories_for_left_sidebar()
         return context
+
+
+class CartMixin(View):
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            customer = Customer.objects.filter(user=request.user).first()
+            if not customer:
+                customer = Customer.objects.create(
+                    user=request.user
+                )
+        else:
+            cart = Cart.objects.filter(for_anonymous_user=True).first()
+            if not cart:
+                cart = Cart.objects.create(for_anonymous_user=True)
+        return super().dispatch(request, *args, **kwargs)
